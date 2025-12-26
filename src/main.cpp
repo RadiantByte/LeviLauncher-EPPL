@@ -6,9 +6,6 @@
 #include "pl/Gloss.h"
 #include "pl/Signature.h"
 
-static const char* PISTON_LIMIT_SIGNATURE = "09 9B 1F 31 00 F1 ?9 0? 00 54";
-static const char* PISTON_LIMIT_REPLACE   = "09 9B 1F FD 3F B1 ?9 0? 00 54";
-
 static bool PatchMemory(void* addr, const void* data, size_t size) {
     uintptr_t page_start = (uintptr_t)addr & ~(4095UL);
     size_t page_size = ((uintptr_t)addr + size - page_start + 4095) & ~(4095UL);
@@ -26,20 +23,17 @@ static uint8_t hexCharToNibble(char c) {
     return 0;
 }
 
-static bool PatchPistonLimit() {
-    uintptr_t addr = pl::signature::pl_resolve_signature(PISTON_LIMIT_SIGNATURE, "libminecraftpe.so");
+static bool PatchSignature(const char* signature, const char* replace, const char* libname) {
+    uintptr_t addr = pl::signature::pl_resolve_signature(signature, libname);
     if (addr == 0) return false;
 
     int sig_len = 0;
-    const char* p = PISTON_LIMIT_SIGNATURE;
-    while (*p) {
-        if (*p != ' ') sig_len++;
-        p++;
-    }
+    const char* p = signature;
+    while (*p) { if (*p != ' ') sig_len++; p++; }
     sig_len = (sig_len + 1) / 2;
 
     uint8_t patch_bytes[sig_len];
-    const char* src = PISTON_LIMIT_REPLACE;
+    const char* src = replace;
     uint8_t* mem = (uint8_t*)addr;
 
     for (int i = 0; i < sig_len; ++i) {
@@ -62,5 +56,10 @@ static bool PatchPistonLimit() {
 __attribute__((constructor))
 void EPPL_Init() {
     GlossInit(true);
-    PatchPistonLimit();
+
+    PatchSignature("09 9B 1F 31 00 F1 ?9 0? 00 54", "09 9B 1F FD 3F B1 ?9 0? 00 54", "libminecraftpe.so");
+    PatchSignature("09 9B 1F 31 00 F1 ?9 0? 00 54", "09 9B 1F FD 3F B1 ?9 0? 00 54", "libminecraftpe.so");
+    PatchSignature("09 9B 1F 35 00 F1 ?? 27 9F 1A", "09 9B 1F FD 3F B1 ?? 27 9F 1A", "libminecraftpe.so");
+    PatchSignature("09 9B 1F 35 00 F1 ?? 27 9F 1A", "09 9B 1F FD 3F B1 ?? 27 9F 1A", "libminecraftpe.so");
+    PatchSignature("09 9B 1F 35 00 F1 ?? 27 9F 1A", "09 9B 1F FD 3F B1 ?? 27 9F 1A", "libminecraftpe.so");
 }
