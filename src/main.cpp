@@ -5,6 +5,14 @@
 #include "pl/Gloss.h"
 #include "pl/Signature.h"
 
+#include <android/log.h>
+
+#define TAG "MyApp"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
+
 /* ============================================================
  *  COMMON MEMORY PATCH HELPER
  * ============================================================ */
@@ -96,8 +104,12 @@ static bool PatchPistonLimit_A() {
             "libminecraftpe.so"
         );
 
-    if (!addr)
+    if (!addr) {
+        LOGI("Addr tidak ditemukan!");
         return false;
+    }
+    
+    LOGI("Ditemukan addr: %p", (void*)addr);
 
     const uint8_t patch[] = { 0xFD, 0x3F, 0xB1 };
     return PatchBytes(addr + 3, patch, sizeof(patch));
@@ -120,6 +132,8 @@ static bool PatchPistonLimit_B() {
     // === first occurrence ===
     uintptr_t first =
         pl::signature::pl_resolve_signature(sig, "libminecraftpe.so");
+    
+    LOGI("Ditemukan first addr: %p", (void*)first);
     if (!first)
         return false;
 
@@ -137,6 +151,8 @@ static bool PatchPistonLimit_B() {
     while (base < end) {
         uintptr_t hit =
             pl::signature::pl_resolve_signature(sig, "libminecraftpe.so");
+        
+        LOGI("Ditemukan hit addr: %p", (void*)hit);
 
         if (hit && hit != first) {
             second = hit;
@@ -152,11 +168,17 @@ static bool PatchPistonLimit_B() {
 }
 
 static bool PatchPistonLimits() {
-    if (!PatchPistonLimit_A())
+    if (!PatchPistonLimit_A()) {
+        LOGI("Gagal Patching piston limits");
         return false;
+    }
 
-    if (!PatchPistonLimit_B())
+    if (!PatchPistonLimit_B()) {
+        LOGI("Gagal Patching piston limits");
         return false;
+    }
+    
+    LOGI("Berhasil Patching piston limits");
 
     return true;
 }
